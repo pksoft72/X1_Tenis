@@ -1,0 +1,48 @@
+﻿	<Project xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+		<PropertyGroup>
+			<ProjectGuid>{7ECBAE63-E09A-4094-BAC8-41A12FB1EF02}</ProjectGuid>
+		</PropertyGroup>
+		<ItemGroup>
+			<Projects Include="Tenis.dproj">
+				<Dependencies/>
+			</Projects>
+			<Projects Include="tscap32\example\Project1.dproj">
+				<Dependencies/>
+			</Projects>
+		</ItemGroup>
+		<ProjectExtensions>
+			<Borland.Personality>Default.Personality.12</Borland.Personality>
+			<Borland.ProjectType/>
+			<BorlandProject>
+				<Default.Personality/>
+			</BorlandProject>
+		</ProjectExtensions>
+		<Target Name="Tenis">
+			<MSBuild Projects="Tenis.dproj"/>
+		</Target>
+		<Target Name="Tenis:Clean">
+			<MSBuild Targets="Clean" Projects="Tenis.dproj"/>
+		</Target>
+		<Target Name="Tenis:Make">
+			<MSBuild Targets="Make" Projects="Tenis.dproj"/>
+		</Target>
+		<Target Name="Project1">
+			<MSBuild Projects="tscap32\example\Project1.dproj"/>
+		</Target>
+		<Target Name="Project1:Clean">
+			<MSBuild Targets="Clean" Projects="tscap32\example\Project1.dproj"/>
+		</Target>
+		<Target Name="Project1:Make">
+			<MSBuild Targets="Make" Projects="tscap32\example\Project1.dproj"/>
+		</Target>
+		<Target Name="Build">
+			<CallTarget Targets="Tenis;Project1"/>
+		</Target>
+		<Target Name="Clean">
+			<CallTarget Targets="Tenis:Clean;Project1:Clean"/>
+		</Target>
+		<Target Name="Make">
+			<CallTarget Targets="Tenis:Make;Project1:Make"/>
+		</Target>
+		<Import Project="$(BDS)\Bin\CodeGear.Group.Targets" Condition="Exists('$(BDS)\Bin\CodeGear.Group.Targets')"/>
+	</Project>
