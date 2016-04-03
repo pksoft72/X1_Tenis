@@ -59,6 +59,8 @@
 				<Form>Frame1</Form>
 				<DesignClass>TFrame</DesignClass>
 			</DCCReference>
+			<DCCReference Include="Ugame.pas"/>
+			<DCCReference Include="UVector.pas"/>
 			<BuildConfiguration Include="Base">
 				<Key>Base</Key>
 			</BuildConfiguration>

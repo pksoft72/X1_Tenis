@@ -12,7 +12,6 @@ object Frame1: TFrame1
     Align = alTop
     BorderWidth = 4
     TabOrder = 0
-    ExplicitWidth = 368
     DesignSize = (
       479
       104)
@@ -625,8 +624,6 @@ object Frame1: TFrame1
     Height = 480
     Align = alClient
     TabOrder = 1
-    ExplicitWidth = 368
-    ExplicitHeight = 476
     DesignSize = (
       479
       480)

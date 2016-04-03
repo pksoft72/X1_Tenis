@@ -10,7 +10,9 @@ uses
   DirectSound in 'DirectX\DirectSound.pas',
   DXTypes in 'DirectX\DXTypes.pas',
   Direct3D9 in 'DirectX\Direct3D9.pas',
-  Frame_Video in 'Frame_Video.pas' {Frame1: TFrame};
+  Frame_Video in 'Frame_Video.pas' {Frame1: TFrame},
+  Ugame in 'Ugame.pas',
+  UVector in 'UVector.pas';
 
 {$R *.res}
 

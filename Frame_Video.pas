@@ -5,7 +5,8 @@ interface
 uses
   Windows, SysUtils, Classes, Graphics, Controls, Forms, Dialogs, ExtCtrls, StdCtrls,
   Buttons, MMSystem, Menus, ComCtrls, JPEG,
-  VFrames;
+  VFrames,
+  UVector,UGame;
 
 type
   TPropertyControl = RECORD
@@ -13,18 +14,6 @@ type
     PCTrackbar: TTrackBar;
     PCCheckbox: TCheckBox;
   END;
-
-TVector = object
-  X,Y : double;
-  procedure Init(A : TPoint);
-  function Length : double;
-  function QLength : double;
-  procedure Normalize;
-  function Point : TPoint;
-  procedure Diff(A,B : TPoint);
-  procedure Mul(C : double);
-  procedure Add(const A : TVector);
-end;
 
   TFrame1 = class(TFrame)
     Panel_Top: TPanel;
@@ -81,8 +70,6 @@ end;
     LocalJPG: TJPEGImage;
     PropCtrl: ARRAY [TVideoProperty] OF TPropertyControl;
 
-    Balls : array [0..5] of TPoint;
-    BallsSpeed : array [0..5] of TPoint;
     procedure CleanPaintBoxVideo;
     procedure CalcInvertedImage(BM1, Inv: TBitmap);
     procedure CalcGrayScaleImage(BM1, Gray: TBitmap);
@@ -92,7 +79,8 @@ end;
     procedure PropertyTrackBarChange(Sender: TObject);
     procedure PropertyCheckBoxClick(Sender: TObject);
 
-    procedure FindTarget(BMP: TBitmap);
+  private
+    Game : TGame;
   public
     { Public declarations }
     procedure UpdateCamList;
@@ -179,26 +167,8 @@ end;
 
 
 procedure TFrame1.btnStartBallsClick(Sender: TObject);
-  var Angle : double;
-      Center : TPoint;
-      Speed,SpeedTarget : double;
-      i : integer;
 begin
-  if VideoBMP[0] = nil then exit;
-  Center.X := VideoBMP[0].Width shr 1;
-  Center.Y := VideoBMP[0].Height shr 1;
-
-  for i := 0 to High(Balls) - 1 do begin
-    Angle := Random(180-90)/PI;
-    Balls[i].X := Round(sin(Angle)*VideoBMP[0].Width+Center.X);
-    Balls[i].Y := Round(cos(Angle)*VideoBMP[0].Height+Center.Y);
-    BallsSpeed[i].X := (Center.X-Balls[i].X);
-    BallsSpeed[i].Y := (Center.Y-Balls[i].Y)+10; // nahoru trochu
-    Speed := sqrt(BallsSpeed[i].X*BallsSpeed[i].X+BallsSpeed[i].Y*BallsSpeed[i].Y);
-    SpeedTarget := Random(10)+10;
-    BallsSpeed[i].X := Round(BallsSpeed[i].X*SpeedTarget/Speed);
-    BallsSpeed[i].Y := Round(BallsSpeed[i].Y*SpeedTarget/Speed);
-  end;
+  Game.StartBalls(VideoBMP[0]);
 end;
 
 procedure TFrame1.CalcDiffImage(BM1, BM2, Diff: TBitmap; VAR DiffRatio: double);
@@ -277,7 +247,7 @@ begin
   VideoBMPIndex := 1 - VideoBMPIndex;
   VideoImage.GetBitmap(VideoBMP[VideoBMPIndex]);
 
-  FindTarget(VideoBMP[VideoBMPIndex]);
+  Game.FindTarget(VideoBMP[VideoBMPIndex]);
 
   IF ComboBox_DisplayMode.ItemIndex <= 0 then begin
     PaintBox_Video.Canvas.Draw(0, 0, VideoBMP[VideoBMPIndex]);
@@ -362,6 +332,10 @@ var
 begin
   IF Initialized then
     exit;
+
+  if Game = nil then
+    Game := TGame.Create;
+
   fSkipCnt := 0;
   Initialized := true;
   LocalJPG := TJPEGImage.Create;
@@ -455,6 +429,7 @@ BEGIN
     VideoImage := nil;
     Initialized := false;
   end;
+  FreeAndNil(Game);
 END;
 
 procedure TFrame1.Updatelistofcameras1Click(Sender: TObject);
@@ -468,108 +443,6 @@ begin
   Label_VideoSize.Caption := 'Video size ' + IntToStr(VideoImage.VideoWidth) + ' x ' + IntToStr(VideoImage.VideoHeight);
 end;
 
-procedure TFrame1.FindTarget(BMP: TBitmap);
-  var X,Y : integer;
-      Xavg,Yavg : int64;
-      Count : integer;
-      C : TColor;
-      Rsum,Gsum,Bsum : int64;
-      radius : integer;
-      R,G,B : integer;
-
-      P : PAnsiChar;
-
-      i : integer;
-      distance : double;
-      Player : TPoint;
-      Hit,Kick,speed,player2 : TVector;
-begin
-//  exit; // zatím
-  Xavg := 0;
-  Yavg := 0;
-  Count := 0;
-
-  Assert(BMP.PixelFormat = pf24bit);
-
-  for Y := 0 to BMP.Height - 1 do begin
-    P := PAnsiChar(BMP.ScanLine[Y]);
-    for X := 0 to BMP.Width-1 do begin
-      B := ord(P^);inc(P);
-      G := ord(P^);inc(P);
-      R := ord(P^);inc(P);
-      if (R > 2*G) and (R > 2*B)
-      then begin
-//        BMP.Canvas.Pixels[X,Y] := clRed;
-        Xavg := Xavg + X;
-        Yavg := Yavg + Y;
-        inc(Count);
-
-//        Rsum := Rsum + R;
-//        Gsum := Gsum + G;
-//        Bsum := Bsum + B;
-      end;
-    end;
-  end;
-  if Count > 100 then begin
-    X := Xavg div Count;
-    Y := Yavg div Count;
-
-//    C := ((Rsum div Count) and $FF)+
-//         (((Gsum div Count) and $FF) shl 8)+
-//         (((Bsum div Count) and $FF) shl 16);
-//    pnlColor.Color := C; // prùmìrná detekovaná barva
-//    pnlColor.Caption := IntToHex(C,6);
-
-
-    Radius := Round(sqrt(Count / PI));
-    BMP.Canvas.Brush.Color := clRed;
-    BMP.Canvas.Ellipse(X-Radius,Y-Radius,X+Radius,Y+Radius);
-
-    BMP.Canvas.Pen.Color := clBlack;
-    BMP.Canvas.MoveTo(X-10,Y);
-    BMP.Canvas.LineTo(X+10,Y);
-    BMP.Canvas.MoveTo(X,Y+10);
-    BMP.Canvas.LineTo(X,Y-10);
-  end;
-  BMP.Canvas.Brush.Color := clWhite;
-  for i := 0 to High(Balls) - 1 do begin
-  // pohyb
-    Balls[i].X := Balls[i].X + BallsSpeed[i].X;
-    Balls[i].Y := Balls[i].Y + BallsSpeed[i].Y; // zrychlení
-    BallsSpeed[i].Y := BallsSpeed[i].Y + 1;
-  // odrazy od stìn
-    if (BallsSpeed[i].X < 0) and (Balls[i].X < 0) then BallsSpeed[i].X := round(-0.9*BallsSpeed[i].X);
-    if (BallsSpeed[i].X > 0) and (Balls[i].X >= BMP.Width) then BallsSpeed[i].X := round(-0.9*BallsSpeed[i].X);
-    if (BallsSpeed[i].Y < 0) and (Balls[i].Y < 0) then BallsSpeed[i].Y := round(-0.9*BallsSpeed[i].Y);
-    if (BallsSpeed[i].Y > 0) and (Balls[i].Y >= BMP.Height) then BallsSpeed[i].Y := round(-0.9*BallsSpeed[i].Y);
-
-    if count > 100 then begin
-      Player.X := X;
-      Player.Y := Y;
-      Hit.Diff(Player,Balls[i]);
-      distance := Hit.Length;
-      distance := distance / radius;
-      if distance < 1 then begin // zásah
-        // bude tam kopnutí ve smìru ven o síle odpovídající hloubce prùniku
-        Speed.X := BallsSpeed[i].X;
-        Speed.Y := BallsSpeed[i].Y;
-        Kick.X := Balls[i].X - X;
-        Kick.Y := Balls[i].Y - Y;
-        Kick.Normalize;
-        Kick.Mul(Speed.Length+Distance*10);
-        Speed.Add(Kick);
-        BallsSpeed[i] := Speed.Point;
-      // nové místo zásahu
-        Hit.Normalize;
-        Hit.Mul(radius);
-        player2.Init(player);
-        Hit.Add(player2);
-        Balls[i] := Hit.Point;
-      end;
-    end;
-    BMP.Canvas.Ellipse(Balls[i].X-10,Balls[i].Y-10,Balls[i].X-20,Balls[i].Y-20);
-  end;
-end;
 
 
 procedure TFrame1.SpeedButton_RunVideoClick(Sender: TObject);
@@ -721,59 +594,6 @@ begin
     Panel_Top.Height := 377
   else
     Panel_Top.Height := 104;
-end;
-
-{ TVector }
-
-procedure TVector.Add(const A: TVector);
-begin
-  X := X + A.X;
-  Y := Y + A.Y;
-end;
-
-procedure TVector.Diff(A, B: TPoint);
-begin
-  X := B.X - A.X;
-  Y := B.Y - A.Y;
-end;
-
-procedure TVector.Init(A: TPoint);
-begin
-  X := A.X;
-  Y := A.Y;
-end;
-
-function TVector.Length: double;
-begin
-  Result := sqrt(sqr(X)+sqr(Y));
-end;
-
-procedure TVector.Mul(C: double);
-begin
-  X := X * C;
-  Y := Y * C;
-end;
-
-procedure TVector.Normalize;
-  var L : double;
-begin
-  L := Length;
-  if L > 0 then begin
-    L := 1/L;
-    X := X * L;
-    Y := Y * L;
-  end;
-end;
-
-function TVector.Point: TPoint;
-begin
-  Result.X := Round(X);
-  Result.Y := Round(Y);
-end;
-
-function TVector.QLength: double;
-begin
-  Result := sqr(X)+sqr(Y);
 end;
 
 end.

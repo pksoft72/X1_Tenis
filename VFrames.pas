@@ -717,7 +717,7 @@ begin
             move(fFourCC, FourCCSt[1], 4);
           end;
         FBitmap.Canvas.TextOut(0,  0, 'Unknown compression');
-        FBitmap.Canvas.TextOut(0, FBitmap.Canvas.TextHeight('X'), 'DataSize: '+string(INtToStr(Size))+'  FourCC: '+FourCCSt);
+        FBitmap.Canvas.TextOut(0, FBitmap.Canvas.TextHeight('X'), 'DataSize: '+string(INtToStr(Size))+'  FourCC: '+string(FourCCSt));
       end;
 
     fImageUnpacked := true;
@@ -814,6 +814,8 @@ VAR
   W, H   : integer;
   FourCC : cardinal;
 BEGIN
+  if VideoSample = nil then exit;
+  
   VideoSample.SetVideoSizeByListIndex(Index);
   hr := VideoSample.GetStreamInfo(W, H, FourCC);
   IF Succeeded(HR)

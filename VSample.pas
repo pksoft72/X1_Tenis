@@ -1155,6 +1155,10 @@ VAR
   piCount,
   piSize                : integer;
 BEGIN
+  if Self = nil then begin
+      Result := S_FALSE;
+      exit;
+  end;
   IF (ListIndex < 0) or (ListIndex >= Length(FormatArr)) then
     begin
       Result := S_FALSE;
